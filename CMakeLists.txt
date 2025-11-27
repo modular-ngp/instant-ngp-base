@@ -22,6 +22,8 @@ add_library(instant-ngp-base)
 target_sources(instant-ngp-base
         PRIVATE
         src/cuda/ngp.cuda.session.cu
+        src/cuda/ngp.cuda.dataset.cu
+        src/cuda/ngp.cuda.train.cu
 )
 
 include(FetchContent)

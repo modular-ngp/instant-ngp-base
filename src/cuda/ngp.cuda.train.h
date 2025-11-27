@@ -24,7 +24,36 @@ namespace ngp::cuda {
         [[nodiscard]] std::optional<std::string> check() const;
     };
 
-    std::optional<std::string> reset_session(const ResetSessionParams& params);
+    struct ResetSessionResult {
+        bool success;
+        std::string message;
+    };
+
+    ResetSessionResult reset_session(const ResetSessionParams& params);
+
+
+    struct LoadDatasetParams {
+
+    };
+
+    struct LoadDatasetResult {
+        bool success;
+        std::string message;
+    };
+
+    LoadDatasetResult load_dataset(const LoadDatasetParams& params);
+
+
+    struct TrainParams {
+
+    };
+
+    struct TrainResult {
+        bool success;
+        std::string message;
+    };
+
+    TrainResult train(const TrainParams& params);
 }
 
 #endif // INSTANT_NGP_BASE_NGP_CUDA_TRAIN_H

@@ -75,7 +75,7 @@ std::optional<std::string> ngp::cuda::ResetSessionParams::check() const {
     return "✔ ResetSessionParams check passed. ";
 }
 
-std::optional<std::string> ngp::cuda::reset_session(const ResetSessionParams& params) {
+ngp::cuda::ResetSessionResult ngp::cuda::reset_session(const ResetSessionParams& params) {
     auto ret = params.check();
     hidden::NGPSession::instance().reset_session(
         nlohmann::json::parse(std::ifstream(params.config_path)),
@@ -86,5 +86,7 @@ std::optional<std::string> ngp::cuda::reset_session(const ResetSessionParams& pa
         params.network.n_dir_dims,
         params.network.n_extra_dims
         );
-    return ret;
+    return {
+        true,
+    };
 }

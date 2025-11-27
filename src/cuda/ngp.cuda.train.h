@@ -1,9 +1,13 @@
 #ifndef INSTANT_NGP_BASE_NGP_CUDA_TRAIN_H
 #define INSTANT_NGP_BASE_NGP_CUDA_TRAIN_H
 
-#include <optional>
 #include <string>
+#include <array>
 #include <filesystem>
+
+namespace tcnn {
+    struct Ray;
+}
 
 namespace ngp::cuda {
     struct ResetSessionParams {
@@ -21,7 +25,7 @@ namespace ngp::cuda {
             uint32_t n_extra_dims = 0;
         } network;
 
-        [[nodiscard]] std::optional<std::string> check() const;
+        [[nodiscard]] const ResetSessionParams& check() const;
     };
 
     struct ResetSessionResult {
@@ -33,12 +37,29 @@ namespace ngp::cuda {
 
 
     struct LoadDatasetParams {
+        std::filesystem::path dataset_path;
 
+        [[nodiscard]] const LoadDatasetParams& check() const;
     };
 
     struct LoadDatasetResult {
         bool success;
         std::string message;
+
+        struct TrainingImageMetadata {
+            const void* pixels    = nullptr;
+            const float* depth    = nullptr;
+            const tcnn::Ray* rays = nullptr;
+
+            std::array<uint32_t, 2> resolution   = {0, 0};
+            std::array<float, 2> principal_point = {0.5f, 0.5f};
+            std::array<float, 2> focal_length    = {1000.f, 1000.f};
+            std::array<float, 4> rolling_shutter = {0.0f, 0.0f, 0.0f, 0.0f};
+            std::array<float, 3> light_dir       = {0.0f, 0.0f, 0.0f};
+        };
+
+        std::vector<TrainingImageMetadata> metadata;
+        std::vector<std::array<std::array<float, 3>, 4>> xforms;
     };
 
     LoadDatasetResult load_dataset(const LoadDatasetParams& params);

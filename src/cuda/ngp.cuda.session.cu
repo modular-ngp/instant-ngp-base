@@ -67,16 +67,15 @@ namespace ngp::cuda::hidden {
     }
 }
 
-std::optional<std::string> ngp::cuda::ResetSessionParams::check() const {
-    if (!std::filesystem::exists(config_path)) throw std::runtime_error("✘ Invalid config path: " + config_path.string());
-    if (!std::filesystem::is_regular_file(config_path)) throw std::runtime_error("✘ Config path is not a regular file: " + config_path.string());
-    if (config_path.extension() != ".json") throw std::runtime_error("✘ Config file is not a JSON file: " + config_path.string());
+const ngp::cuda::ResetSessionParams& ngp::cuda::ResetSessionParams::check() const {
+    if (!std::filesystem::exists(config_path)) throw std::runtime_error("[FATAL ERROR] - Invalid config path: " + config_path.string());
+    if (!std::filesystem::is_regular_file(config_path)) throw std::runtime_error("[FATAL ERROR] - Config path is not a regular file: " + config_path.string());
+    if (config_path.extension() != ".json") throw std::runtime_error("[FATAL ERROR] - Config file is not a JSON file: " + config_path.string());
 
-    return "✔ ResetSessionParams check passed. ";
+    return *this;
 }
 
 ngp::cuda::ResetSessionResult ngp::cuda::reset_session(const ResetSessionParams& params) {
-    auto ret = params.check();
     hidden::NGPSession::instance().reset_session(
         nlohmann::json::parse(std::ifstream(params.config_path)),
         params.loss.otype,

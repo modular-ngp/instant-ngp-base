@@ -39,11 +39,18 @@ namespace ngp::cuda {
     struct LoadDatasetParams {
         std::filesystem::path dataset_path;
 
+        enum class DatasetType {
+            NerfSynthetic,
+            LLFF,
+            NSVF,
+            Unknown
+        } dataset_type = DatasetType::Unknown;
+
         [[nodiscard]] const LoadDatasetParams& check() const;
     };
 
     struct LoadDatasetResult {
-        bool success;
+        bool success = false;
         std::string message;
 
         struct TrainingImageMetadata {
@@ -51,11 +58,8 @@ namespace ngp::cuda {
             const float* depth    = nullptr;
             const tcnn::Ray* rays = nullptr;
 
-            std::array<uint32_t, 2> resolution   = {0, 0};
-            std::array<float, 2> principal_point = {0.5f, 0.5f};
-            std::array<float, 2> focal_length    = {1000.f, 1000.f};
-            std::array<float, 4> rolling_shutter = {0.0f, 0.0f, 0.0f, 0.0f};
-            std::array<float, 3> light_dir       = {0.0f, 0.0f, 0.0f};
+            std::array<uint32_t, 2> resolution = {0, 0};
+            std::array<float, 2> focal_length  = {1000.f, 1000.f};
         };
 
         std::vector<TrainingImageMetadata> metadata;

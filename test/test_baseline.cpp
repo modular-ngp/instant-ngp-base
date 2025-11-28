@@ -7,6 +7,7 @@ int main() {
     }.check());
     ngp::cuda::load_dataset(ngp::cuda::LoadDatasetParams{
         .dataset_path = "C:/Users/xayah/Desktop/instant-ngp/data/nerf-synthetic/lego",
+        .dataset_type = ngp::cuda::LoadDatasetParams::DatasetType::NeRfSynthetic,
     }.check());
     return 0;
 }

@@ -40,7 +40,7 @@ namespace ngp::cuda {
         std::filesystem::path dataset_path;
 
         enum class DatasetType {
-            NerfSynthetic,
+            NeRfSynthetic,
             LLFF,
             NSVF,
             Unknown

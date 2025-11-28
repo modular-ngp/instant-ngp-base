@@ -44,7 +44,7 @@ namespace ngp::cuda::hidden {
 
 ngp::cuda::LoadDatasetResult ngp::cuda::load_dataset(const LoadDatasetParams& params) {
     switch (params.dataset_type) {
-    case LoadDatasetParams::DatasetType::NerfSynthetic: return hidden::load_dataset_nerf_synthetic(params.dataset_path);
+    case LoadDatasetParams::DatasetType::NeRfSynthetic: return hidden::load_dataset_nerf_synthetic(params.dataset_path);
     case LoadDatasetParams::DatasetType::LLFF:
     case LoadDatasetParams::DatasetType::NSVF:
     case LoadDatasetParams::DatasetType::Unknown: throw std::runtime_error("[FATAL ERROR] - 1");

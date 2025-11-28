@@ -19,24 +19,25 @@ ngp::cuda::LoadDatasetResult ngp::cuda::load_dataset(const LoadDatasetParams& pa
     // Load NeRF Synthetic Dataset
     for (const auto& entry : json_files) {
         for (const auto& frame : entry["frames"]) {
-            std::array<std::array<float, 3>, 4> mat{};
-            for (int m = 0; m < 3; m++) for (int n = 0; n < 4; n++) mat[n][m] = static_cast<float>(frame["transform_matrix"][m][n]);
-            result.xforms.emplace_back(mat);
+            std::array<std::array<float, 3>, 4>& _mat = result.xforms.emplace_back();
+            for (int m = 0; m < 3; m++) for (int n = 0; n < 4; n++) _mat[n][m] = static_cast<float>(frame["transform_matrix"][m][n]);
 
-            auto image_file_path = std::filesystem::canonical(std::filesystem::absolute((params.dataset_path / frame["file_path"].get<std::string>()).concat(".png")));
-            int w, h, comp;
-            uint8_t* image                     = stbi_load(image_file_path.string().c_str(), &w, &h, &comp, 4);
-            const size_t n_pixels              = static_cast<size_t>(w) * static_cast<size_t>(h);
-            const size_t img_size              = n_pixels * 4 * sizeof(uint8_t);
-            constexpr size_t image_type_stride = sizeof(uint8_t);
-            tcnn::GPUMemory<uint8_t> images_data_gpu_tmp;
-            images_data_gpu_tmp.resize(img_size * image_type_stride);
-            images_data_gpu_tmp.copy_from_host(image);
+            int _w, _h, _comp;
+            const std::filesystem::path _image_file_path = std::filesystem::canonical(std::filesystem::absolute((params.dataset_path / frame["file_path"].get<std::string>()).concat(".png")));
+            const uint8_t* _image_data_cpu               = stbi_load(_image_file_path.string().c_str(), &_w, &_h, &_comp, 4);
 
-            auto metadata       = result.metadata.emplace_back();
-            metadata.pixels     = images_data_gpu_tmp.data();
-            metadata.resolution = {static_cast<uint32_t>(w), static_cast<uint32_t>(h)};
-            std::cout << "Loaded image: " << image_file_path << " (" << w << "x" << h << ")\n";
+            tcnn::GPUMemory<uint8_t> images_data_gpu;
+            images_data_gpu.resize(_w * _h * _comp * sizeof(uint8_t));
+            images_data_gpu.copy_from_host(_image_data_cpu);
+
+            LoadDatasetResult::TrainingImageMetadata& metadata = result.metadata.emplace_back();
+            metadata.pixels                                    = images_data_gpu.data();
+            metadata.resolution                                = {static_cast<uint32_t>(_w), static_cast<uint32_t>(_h)};
+
+            std::array<float, 2>& focal_length = metadata.focal_length;
+            focal_length[0] = static_cast<float>(_w) / (2.0f * tan(static_cast<float>(entry["camera_angle_x"]) * 0.5f));
+            focal_length[1] = 0.f;
+            std::cout << "Loaded image: " << _image_file_path << " (" << _w << "x" << _h << "), focal length: (" << focal_length[0] << ", " << focal_length[1] << ")\n";
         }
     }
 

@@ -1,4 +1,4 @@
-#include "ngp.cuda.train.h"
+#include "ngp.train.h"
 
 #include <nlohmann/json.hpp>
 #include <stb_image.h>
@@ -50,21 +50,4 @@ ngp::cuda::LoadDatasetResult ngp::cuda::load_dataset(const LoadDatasetParams& pa
     case LoadDatasetParams::DatasetType::Unknown: throw std::runtime_error("[FATAL ERROR] - 1");
     default: throw std::runtime_error("[FATAL ERROR] - 2");
     }
-}
-
-const ngp::cuda::LoadDatasetParams& ngp::cuda::LoadDatasetParams::check() const {
-    if (!std::filesystem::exists(dataset_path)) throw std::runtime_error("[FATAL ERROR] - Invalid config path: " + dataset_path.string());
-    if (!std::filesystem::is_directory(dataset_path)) throw std::runtime_error("[FATAL ERROR] - Config path is not a directory: " + dataset_path.string());
-    {
-        bool has_json = false;
-        for (const auto& entry : std::filesystem::directory_iterator(dataset_path)) {
-            if (entry.path().extension() == ".json") {
-                has_json = true;
-                break;
-            }
-        }
-        if (!has_json) throw std::runtime_error("[FATAL ERROR] - Dataset directory does not contain any JSON files: " + dataset_path.string());
-    }
-
-    return *this;
 }

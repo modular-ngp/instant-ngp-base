@@ -1,4 +1,4 @@
-#include "ngp.cuda.train.h"
+#include "ngp.train.h"
 #include "ngp.cuda.nerfnetwork.cuh"
 
 #include <tiny-cuda-nn/loss.h>
@@ -67,16 +67,8 @@ namespace ngp::cuda::hidden {
     }
 }
 
-const ngp::cuda::ResetSessionParams& ngp::cuda::ResetSessionParams::check() const {
-    if (!std::filesystem::exists(config_path)) throw std::runtime_error("[FATAL ERROR] - Invalid config path: " + config_path.string());
-    if (!std::filesystem::is_regular_file(config_path)) throw std::runtime_error("[FATAL ERROR] - Config path is not a regular file: " + config_path.string());
-    if (config_path.extension() != ".json") throw std::runtime_error("[FATAL ERROR] - Config file is not a JSON file: " + config_path.string());
-
-    return *this;
-}
-
-ngp::cuda::ResetSessionResult ngp::cuda::reset_session(const ResetSessionParams& params) {
-    hidden::NGPSession::instance().reset_session(
+ngp::ResetSessionResult ngp::reset_session(const ResetSessionParams& params) {
+    cuda::hidden::NGPSession::instance().reset_session(
         nlohmann::json::parse(std::ifstream(params.config_path)),
         params.loss.otype,
         params.network.n_pos,

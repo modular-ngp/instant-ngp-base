@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 4.00)
 project(instant-ngp-base VERSION 1.0.0 LANGUAGES CXX CUDA)
 
-option(INSTANT_NGP_BUILD_TESTS "Build tests for instant-ngp-base" ON)
+option(INSTANT_NGP_BUILD_TESTS "Build tests for instant-ngp-base" OFF)
+option(INSTANT_NGP_BUILD_WITH_DEBUG_INFO "Build instant-ngp-base with debug info" OFF)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -21,10 +22,15 @@ set(CMAKE_CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 add_library(instant-ngp-base)
 target_sources(instant-ngp-base
         PRIVATE
+        src/ngp.dataset.cpp
+        src/ngp.debug.cpp
         src/cuda/ngp.cuda.session.cu
-        src/cuda/ngp.cuda.dataset.cu
         src/cuda/ngp.cuda.train.cu
 )
+if (INSTANT_NGP_BUILD_WITH_DEBUG_INFO)
+    target_compile_definitions(instant-ngp-base PRIVATE INSTANT_NGP_DEBUG)
+endif ()
+target_include_directories(instant-ngp-base PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 include(FetchContent)
 set(TCNN_ALLOW_CUBLAS_CUSOLVER OFF CACHE BOOL "" FORCE)

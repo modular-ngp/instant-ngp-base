@@ -37,7 +37,7 @@ namespace ngp::cuda::hidden {
 
     private:
         NGPSession()  = default;
-        ~NGPSession() = default;
+        ~NGPSession();
 
         std::shared_ptr<tcnn::Loss<tcnn::network_precision_t>> m_loss;
         std::shared_ptr<tcnn::Optimizer<tcnn::network_precision_t>> m_optimizer;

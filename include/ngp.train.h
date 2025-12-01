@@ -1,13 +1,14 @@
 #ifndef INSTANT_NGP_BASE_NGP_TRAIN_H
 #define INSTANT_NGP_BASE_NGP_TRAIN_H
 
-#include "ngp.dataset.h"
-
 #include <string>
 #include <filesystem>
 
 namespace ngp {
+    struct LoadDatasetResult;
+}
 
+namespace ngp {
     struct ResetSessionParams {
         std::filesystem::path config_path;
 
@@ -37,7 +38,8 @@ namespace ngp {
 
 
     struct TrainParams {
-        LoadDatasetResult dataset_cpu;
+        const std::shared_ptr<LoadDatasetResult> dataset_cpu;
+        const size_t n_epoch = 1000;
 
         [[nodiscard]] const TrainParams& check() const;
     };

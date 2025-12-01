@@ -1,6 +1,10 @@
 #include "ngp.train.h"
+#include "ngp.dataset.h"
 
 #include <pcg32/pcg32.h>
+#include <tiny-cuda-nn/gpu_memory.h>
+
+#include <iostream>
 
 namespace ngp::cuda::hidden {
     constexpr __device__ uint32_t N_MAX_RANDOM_SAMPLES_PER_RAY() {
@@ -107,6 +111,23 @@ namespace ngp::cuda::hidden {
 }
 
 ngp::TrainResult ngp::train_session(const TrainParams& params) {
+    // tcnn::set_log_callback(
+    // [](tcnn::LogSeverity severity, const std::string& msg)
+    // {
+    //     std::cout << msg;
+    // });
+
+    const auto& images_cpu = params.dataset_cpu->images;
+    const size_t n_images  = images_cpu.size();
+
+    std::vector<tcnn::GPUMemory<uint8_t>> pixelmemory;
+    pixelmemory.resize(n_images);
+    for (size_t i = 0; i < n_images; ++i) {
+        const auto& img = images_cpu[i];
+        pixelmemory[i].resize(img.resolution[0] * img.resolution[1] * img.channel * sizeof(uint8_t));
+        pixelmemory[i].copy_from_host(img.pixels);
+    }
+
     return {
         true,
         "Training not yet implemented in CUDA backend."

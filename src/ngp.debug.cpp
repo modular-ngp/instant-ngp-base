@@ -4,6 +4,24 @@
 #ifdef INSTANT_NGP_DEBUG
 
 #include <print>
+#include <stacktrace>
+#include "stb_image.h"
+
+constexpr std::string_view green  = "\033[32m";
+constexpr std::string_view red    = "\033[31m";
+constexpr std::string_view yellow = "\033[33m";
+constexpr std::string_view reset  = "\033[0m";
+
+ngp::LoadDatasetResult::~LoadDatasetResult() {
+    std::println("{}[LOAD DATASET RESULT DESTRUCTOR]{} Releasing {} images...",
+        yellow, reset, images.size());
+    for (auto& img : images) {
+        if (img.pixels) {
+            stbi_image_free((void*) img.pixels);
+            img.pixels = nullptr;
+        }
+    }
+}
 
 const ngp::LoadDatasetParams& ngp::LoadDatasetParams::check() const {
     if (!std::filesystem::exists(dataset_path)) throw std::runtime_error("[FATAL ERROR] - Invalid config path: " + dataset_path.string());
@@ -23,7 +41,12 @@ const ngp::LoadDatasetParams& ngp::LoadDatasetParams::check() const {
 }
 
 const ngp::LoadDatasetResult& ngp::LoadDatasetResult::print() const {
-    std::println("[LOAD DATASET RESULT] Success: {}, Message: {}, Num Images: {}", this->success, this->message, this->dataset.size());
+    if (success)
+        println("{}[LOAD DATASET RESULT]{} SUCCESS: {}",
+            green, reset, message);
+    else
+        println("{}[LOAD DATASET RESULT]{} Fail: {}",
+            red, reset, message);
 
     return *this;
 }
@@ -37,7 +60,12 @@ const ngp::ResetSessionParams& ngp::ResetSessionParams::check() const {
 }
 
 const ngp::ResetSessionResult& ngp::ResetSessionResult::print() const {
-    std::println("[RESET SESSION RESULT] Success: {}, Message: {}", this->success, this->message);
+    if (success)
+        std::println("{}[RESET SESSION RESULT]{} SUCCESS: {}",
+            green, reset, message);
+    else
+        std::println("{}[RESET SESSION RESULT]{} Fail: {}",
+            red, reset, message);
     return *this;
 }
 
@@ -45,8 +73,13 @@ const ngp::TrainParams& ngp::TrainParams::check() const {
     return *this;
 }
 
-const ngp::TrainResult& ngp::TrainResult::print() const {
-    std::println("[TRAIN RESULT] Success: {}, Message: {}", this->success, this->message);
+const ngp::TrainResult& ngp::TrainResult::print() const {\
+    if (success)
+        std::println("{}[TRAIN RESULT]{} SUCCESS: {}",
+            green, reset, message);
+    else
+        std::println("{}[TRAIN RESULT]{} Fail : {}",
+            red, reset, message);
     return *this;
 }
 

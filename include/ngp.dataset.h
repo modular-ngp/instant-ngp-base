@@ -39,7 +39,7 @@ namespace ngp {
         LoadDatasetResult& operator=(const LoadDatasetResult&) = delete;
         LoadDatasetResult(LoadDatasetResult&&)                 = default;
         LoadDatasetResult& operator=(LoadDatasetResult&&)      = default;
-        [[nodiscard]] const LoadDatasetResult& print() const;
+        [[maybe_unused]] const LoadDatasetResult& print() const;
     };
 
     std::shared_ptr<LoadDatasetResult> load_dataset(const LoadDatasetParams& params);

@@ -50,22 +50,6 @@ FetchContent_MakeAvailable(tiny-cuda-nn)
 target_link_libraries(instant-ngp-base PRIVATE tiny-cuda-nn)
 
 FetchContent_Declare(
-        threadpool
-        GIT_REPOSITORY https://github.com/modular-ngp/threadpool.git
-        GIT_TAG master
-)
-FetchContent_MakeAvailable(threadpool)
-target_link_libraries(instant-ngp-base PRIVATE threadpool::threadpool)
-
-FetchContent_Declare(
-        args
-        GIT_REPOSITORY https://github.com/Taywee/args.git
-        GIT_TAG master
-)
-FetchContent_MakeAvailable(args)
-target_link_libraries(instant-ngp-base PRIVATE taywee::args)
-
-FetchContent_Declare(
         nlohmann_json
         GIT_REPOSITORY https://github.com/nlohmann/json.git
         GIT_TAG master

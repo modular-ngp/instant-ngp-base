@@ -24,7 +24,6 @@ namespace ngp::cuda::hidden {
             tcnn::mat4x3 xform{};
         };
 
-        std::vector<ImagesDataGPU> dataset_cpu;
         std::vector<tcnn::GPUMemory<uint8_t>> pixels_gpu;
         tcnn::GPUMemory<ImagesDataGPU> dataset_gpu;
         tcnn::StreamAndEvent m_stream;

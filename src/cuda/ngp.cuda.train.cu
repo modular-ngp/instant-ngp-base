@@ -104,24 +104,20 @@ __FILE__, __LINE__, #expr, cudaGetErrorString(_result)));                       
         ) {
         const uint32_t i = threadIdx.x + blockIdx.x * blockDim.x;
         if (i >= n_rays) return;
-        const uint32_t img           = image_idx(i, n_rays, n_training_images);
-        const tcnn::ivec2 resolution = dataset[img].resolution;
         rng.advance(i * N_MAX_RANDOM_SAMPLES_PER_RAY());
 
+        const uint32_t img           = image_idx(i, n_rays, n_training_images);
+        const tcnn::ivec2 resolution = dataset[img].resolution;
         const tcnn::vec2 uv = nerf_random_image_pos_training(rng, resolution, true);
-
         const uint64_t pix_idx = pixel_idx(uv, resolution, 0);
 
-        tcnn::vec4 xxx = read_rgba(uv, resolution, dataset[img].pixels, 0);
-        printf("uv=(%f,%f), rgba=(%f,%f,%f,%f)\n", uv.x, uv.y, xxx.x, xxx.y, xxx.z, xxx.w);
+        if (read_rgba(uv, resolution, dataset[img].pixels, 0).x < 0.0f) {
+            printf("uv=(%f,%f)\n", uv.x, uv.y);
+            return;
+        }
 
-        // if (read_rgba(uv, resolution, dataset[img].pixels_gpu.data(), 0).x < 0.0f) {
-        // return;
-        // }
-
-        // constexpr float max_level = 1.0f;
-        //
-        // tcnn::mat4x3 xform = dataset->xforms[img];
+        constexpr float max_level = 1.0f;
+        const tcnn::mat4x3 xform  = dataset[img].xform;
     }
 }
 
@@ -130,13 +126,14 @@ ngp::TrainResult ngp::train_session(const TrainParams& params) {
     const size_t n_images  = images_cpu.size();
 
     auto& session = cuda::hidden::NGPSession::instance();
-    session.dataset_cpu.resize(n_images);
+    std::vector<cuda::hidden::NGPSession::ImagesDataGPU> _tmp_image_cpu;
+    _tmp_image_cpu.resize(n_images);
     session.pixels_gpu.resize(n_images);
     const auto rng = session.m_rng;
 
     for (size_t i = 0; i < n_images; ++i) {
         const auto& [xform_cpu, pixels_cpu, resolution_cpu, focal_cpu, ch_cpu] = images_cpu[i];
-        auto& [_pixels, _resolution, _focal, _xform]                           = session.dataset_cpu[i];
+        auto& [_pixels, _resolution, _focal, _xform]                           = _tmp_image_cpu[i];
 
         session.pixels_gpu[i].resize(resolution_cpu[0] * resolution_cpu[1] * ch_cpu * sizeof(uint8_t));
         session.pixels_gpu[i].copy_from_host(pixels_cpu);
@@ -153,7 +150,7 @@ ngp::TrainResult ngp::train_session(const TrainParams& params) {
     }
 
     session.dataset_gpu.resize(n_images);
-    session.dataset_gpu.copy_from_host(session.dataset_cpu.data());
+    session.dataset_gpu.copy_from_host(_tmp_image_cpu.data());
 
     tcnn::linear_kernel(
         cuda::hidden::generate_training_samples_nerf,

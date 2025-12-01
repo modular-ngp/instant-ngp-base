@@ -39,14 +39,14 @@ namespace ngp::hidden {
 
         std::for_each(std::execution::par, frames.begin(), frames.end(),
             [&](auto const& f) {
-                auto& [xform, pixels, resolution, focal_length, channel] = result->images[i.fetch_add(1)];
+                auto& [xform, pixels, resolution, focal, channel] = result->images[i.fetch_add(1)];
                 for (int m = 0; m < 3; ++m) for (int n = 0; n < 4; ++n) xform[n][m] = static_cast<float>(f["transform_matrix"][m][n]);
                 auto path = (dataset_path / f["file_path"].template get<std::string>()).concat(".png");
                 int w{}, h{}, c{};
                 pixels          = stbi_load(path.string().c_str(), &w, &h, &c, 4);
                 resolution      = {static_cast<size_t>(w), static_cast<size_t>(h)};
-                focal_length[0] = static_cast<float>(w) / (2.f * std::tan(angle * .5f));
-                focal_length[1] = 0.f;
+                focal[0] = static_cast<float>(w) / (2.f * std::tan(angle * .5f));
+                focal[1] = 0.f;
                 channel         = static_cast<size_t>(c);
             }
             );

@@ -18,15 +18,15 @@ namespace ngp::cuda::hidden {
         void reset_session(const nlohmann::json& config, const std::string& otype, uint32_t n_pos, uint32_t n_input, uint32_t n_output, uint32_t n_dir_dims, uint32_t n_extra_dims);
 
         struct ImagesDataGPU {
-            const void* pixels      = nullptr;
-            tcnn::ivec2 resolution  = tcnn::ivec2(0);
-            tcnn::vec2 focal_length = tcnn::vec2(1000.f);
-            tcnn::mat4x3 xform      = tcnn::mat4x3::identity();
+            const void* pixels;
+            tcnn::ivec2 resolution{};
+            tcnn::vec2 focal{};
+            tcnn::mat4x3 xform{};
         };
 
         std::vector<ImagesDataGPU> dataset_cpu;
+        std::vector<tcnn::GPUMemory<uint8_t>> pixels_gpu;
         tcnn::GPUMemory<ImagesDataGPU> dataset_gpu;
-        std::vector<tcnn::GPUMemory<uint8_t>> pixel_buffers_gpu;
         tcnn::StreamAndEvent m_stream;
         tcnn::default_rng_t m_rng;
 
@@ -37,7 +37,7 @@ namespace ngp::cuda::hidden {
 
     private:
         NGPSession()  = default;
-        ~NGPSession();
+        ~NGPSession() = default;
 
         std::shared_ptr<tcnn::Loss<tcnn::network_precision_t>> m_loss;
         std::shared_ptr<tcnn::Optimizer<tcnn::network_precision_t>> m_optimizer;

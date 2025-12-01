@@ -27,7 +27,7 @@ namespace ngp {
             std::array<std::array<float, 3>, 4> xform{};
             const unsigned char* pixels       = nullptr;
             std::array<size_t, 2> resolution  = {0, 0};
-            std::array<float, 2> focal_length = {1000.f, 1000.f};
+            std::array<float, 2> focal = {1000.f, 1000.f};
             size_t channel                    = 4;
         };
 

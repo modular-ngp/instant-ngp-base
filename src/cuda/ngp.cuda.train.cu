@@ -108,15 +108,17 @@ __FILE__, __LINE__, #expr, cudaGetErrorString(_result)));                       
         const tcnn::ivec2 resolution = dataset[img].resolution;
         rng.advance(i * N_MAX_RANDOM_SAMPLES_PER_RAY());
 
-        tcnn::vec2 uv = nerf_random_image_pos_training(rng, resolution, true);
+        const tcnn::vec2 uv = nerf_random_image_pos_training(rng, resolution, true);
 
-        uint64_t pix_idx = pixel_idx(uv, resolution, 0);
+        const uint64_t pix_idx = pixel_idx(uv, resolution, 0);
 
-        printf("thread=%u img=%u pix=%llu\n", i, img, (unsigned long long) pix_idx);
-        // if (read_rgba(uv, resolution, dataset->metadata[img].pixels, 0).x < 0.0f) {
-        //     return;
+        tcnn::vec4 xxx = read_rgba(uv, resolution, dataset[img].pixels, 0);
+        printf("uv=(%f,%f), rgba=(%f,%f,%f,%f)\n", uv.x, uv.y, xxx.x, xxx.y, xxx.z, xxx.w);
+
+        // if (read_rgba(uv, resolution, dataset[img].pixels_gpu.data(), 0).x < 0.0f) {
+        // return;
         // }
-        //
+
         // constexpr float max_level = 1.0f;
         //
         // tcnn::mat4x3 xform = dataset->xforms[img];
@@ -129,30 +131,27 @@ ngp::TrainResult ngp::train_session(const TrainParams& params) {
 
     auto& session = cuda::hidden::NGPSession::instance();
     session.dataset_cpu.resize(n_images);
-    session.pixel_buffers_gpu.resize(n_images);
-    auto rng = session.m_rng; // copy rng
+    session.pixels_gpu.resize(n_images);
+    const auto rng = session.m_rng;
 
     for (size_t i = 0; i < n_images; ++i) {
-        const auto& [xform, pixels, resolution, focal_length, channel] = images_cpu[i];
+        const auto& [xform_cpu, pixels_cpu, resolution_cpu, focal_cpu, ch_cpu] = images_cpu[i];
+        auto& [_pixels, _resolution, _focal, _xform]                           = session.dataset_cpu[i];
 
-        // 1. Upload pixels to GPU
-        session.pixel_buffers_gpu[i].resize(resolution[0] * resolution[1] * channel * sizeof(uint8_t));
-        session.pixel_buffers_gpu[i].copy_from_host(pixels);
+        session.pixels_gpu[i].resize(resolution_cpu[0] * resolution_cpu[1] * ch_cpu * sizeof(uint8_t));
+        session.pixels_gpu[i].copy_from_host(pixels_cpu);
 
-        // 2. Fill CPU-side metadata struct
-        auto& dst        = session.dataset_cpu[i];
-        dst.pixels       = session.pixel_buffers_gpu[i].data(); // device pointer
-        dst.resolution   = tcnn::ivec2(resolution[0], resolution[1]);
-        dst.focal_length = tcnn::vec2(focal_length[0], focal_length[1]);
-        dst.xform        = tcnn::mat4x3(
-            xform[0][0], xform[0][1], xform[0][2],
-            xform[1][0], xform[1][1], xform[1][2],
-            xform[2][0], xform[2][1], xform[2][2],
-            xform[3][0], xform[3][1], xform[3][2]
+        _pixels     = session.pixels_gpu[i].data();
+        _resolution = tcnn::ivec2(resolution_cpu[0], resolution_cpu[1]);
+        _focal      = tcnn::vec2(focal_cpu[0], focal_cpu[1]);
+        _xform      = tcnn::mat4x3(
+            xform_cpu[0][0], xform_cpu[0][1], xform_cpu[0][2],
+            xform_cpu[1][0], xform_cpu[1][1], xform_cpu[1][2],
+            xform_cpu[2][0], xform_cpu[2][1], xform_cpu[2][2],
+            xform_cpu[3][0], xform_cpu[3][1], xform_cpu[3][2]
             );
     }
 
-    // 3. Copy the whole array-of-structs to device
     session.dataset_gpu.resize(n_images);
     session.dataset_gpu.copy_from_host(session.dataset_cpu.data());
 

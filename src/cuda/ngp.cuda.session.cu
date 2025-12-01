@@ -6,32 +6,6 @@
 #include <fstream>
 
 namespace ngp::cuda::hidden {
-    NGPSession::~NGPSession() noexcept {
-        try {
-            // Free image pixels in GPU
-            for (auto& buf : pixel_buffers_gpu) {
-                buf.free_memory();
-            }
-            pixel_buffers_gpu.clear();
-
-            // Free dataset buffer
-            dataset_gpu.free_memory();
-            dataset_cpu.clear();
-
-            // Destroy tiny-cuda-nn components
-            m_trainer.reset();
-            m_network.reset();
-            m_encoding.reset();
-            m_optimizer.reset();
-            m_loss.reset();
-
-            // Destroy stream/event
-            m_stream = tcnn::StreamAndEvent{};
-        } catch (...) {
-            // Never throw — destructor must be noexcept-safe
-        }
-    }
-
     void NGPSession::reset_session(const nlohmann::json& config, const std::string& otype, const uint32_t n_pos, const uint32_t n_input, const uint32_t n_output, const uint32_t n_dir_dims, const uint32_t n_extra_dims) {
         {
             const auto& loss_config     = config["loss"];

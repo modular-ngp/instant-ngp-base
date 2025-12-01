@@ -1,41 +1,11 @@
 #include "ngp.train.h"
 #include "ngp.cuda.nerfnetwork.cuh"
-
-#include <tiny-cuda-nn/loss.h>
-#include <tiny-cuda-nn/optimizer.h>
-#include <tiny-cuda-nn/network.h>
-#include <tiny-cuda-nn/encoding.h>
-#include <tiny-cuda-nn/trainer.h>
+#include "ngp.cuda.session.cuh"
 
 #include <nlohmann/json.hpp>
 #include <fstream>
 
 namespace ngp::cuda::hidden {
-    struct NGPSession {
-        static NGPSession& instance() {
-            static NGPSession instance;
-            return instance;
-        }
-
-        void reset_session(const nlohmann::json& config, const std::string& otype, uint32_t n_pos, uint32_t n_input, uint32_t n_output, uint32_t n_dir_dims, uint32_t n_extra_dims);
-
-        NGPSession(const NGPSession&)            = delete;
-        NGPSession& operator=(const NGPSession&) = delete;
-        NGPSession(NGPSession&&)                 = delete;
-        NGPSession& operator=(NGPSession&&)      = delete;
-
-    private:
-        NGPSession()  = default;
-        ~NGPSession() = default;
-
-        std::shared_ptr<tcnn::Loss<tcnn::network_precision_t>> m_loss;
-        std::shared_ptr<tcnn::Optimizer<tcnn::network_precision_t>> m_optimizer;
-        std::shared_ptr<tcnn::Network<float, tcnn::network_precision_t>> m_network;
-        std::shared_ptr<tcnn::Encoding<tcnn::network_precision_t>> m_encoding;
-        std::shared_ptr<tcnn::Trainer<float, tcnn::network_precision_t, tcnn::network_precision_t>> m_trainer;
-        uint32_t m_seed = 1337;
-    };
-
     void NGPSession::reset_session(const nlohmann::json& config, const std::string& otype, const uint32_t n_pos, const uint32_t n_input, const uint32_t n_output, const uint32_t n_dir_dims, const uint32_t n_extra_dims) {
         {
             const auto& loss_config     = config["loss"];

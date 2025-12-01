@@ -30,7 +30,7 @@ namespace ngp {
         bool success;
         std::string message;
 
-        void print() const;
+        [[nodiscard]] const ResetSessionResult& print() const;
     };
 
     ResetSessionResult reset_session(const ResetSessionParams& params);
@@ -45,6 +45,8 @@ namespace ngp {
     struct TrainResult {
         bool success;
         std::string message;
+
+        [[nodiscard]] const TrainResult& print() const;
     };
 
     TrainResult train_session(const TrainParams& params);

@@ -32,7 +32,7 @@ namespace ngp {
 
         std::vector<Dataset> dataset;
 
-        void print() const;
+        [[nodiscard]] const LoadDatasetResult& print() const;
     };
 
     LoadDatasetResult load_dataset(const LoadDatasetParams& params);

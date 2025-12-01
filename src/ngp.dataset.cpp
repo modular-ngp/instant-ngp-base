@@ -3,28 +3,63 @@
 #include <nlohmann/json.hpp>
 #include <stb_image.h>
 #include <fstream>
+#include <ranges>
+#include <execution>
+#include <atomic>
+#include <vector>
 
 namespace ngp::hidden {
     LoadDatasetResult load_dataset_nerf_synthetic(const std::filesystem::path& dataset_path) {
+        const auto json_paths = std::ranges::to<std::vector<std::filesystem::path>>(
+            std::filesystem::directory_iterator(dataset_path)
+            | std::views::filter([](auto const& e) {
+                return e.path().extension() == ".json";
+            })
+            | std::views::transform([](auto const& e) {
+                return e.path();
+            })
+            );
+
         std::vector<nlohmann::json> json_files;
-        for (const auto& entry : std::filesystem::directory_iterator(dataset_path)) if (entry.path().extension() == ".json") json_files.push_back(nlohmann::json::parse(std::ifstream(entry.path())));
+        json_files.reserve(json_paths.size());
+        for (auto const& p : json_paths) if (std::ifstream f(p); f) json_files.emplace_back(nlohmann::json::parse(f));
+
+        auto frames = std::ranges::to<std::vector<nlohmann::json>>(
+            json_files | std::views::transform([](auto const& j) {
+                return j["frames"];
+            })
+            | std::views::join
+            );
 
         LoadDatasetResult result;
-        for (const auto& entry : json_files) {
-            for (const auto& frame : entry["frames"]) {
-                LoadDatasetResult::Dataset& dataset = result.dataset.emplace_back();
-                for (int m = 0; m < 3; m++) for (int n = 0; n < 4; n++) dataset.xform[n][m] = static_cast<float>(frame["transform_matrix"][m][n]);
+        result.dataset.resize(frames.size());
 
-                int _w, _h, _comp;
-                const std::filesystem::path _image_file_path = std::filesystem::canonical(std::filesystem::absolute((dataset_path / frame["file_path"].get<std::string>()).concat(".png")));
-                dataset.pixels                               = stbi_load(_image_file_path.string().c_str(), &_w, &_h, &_comp, 4);
-                dataset.resolution                           = {static_cast<uint32_t>(_w), static_cast<uint32_t>(_h)};
-                dataset.focal_length[0]                      = static_cast<float>(_w) / (2.0f * tan(static_cast<float>(entry["camera_angle_x"]) * 0.5f));
-                dataset.focal_length[1]                      = 0.f;
+        const float angle = json_files.front()["camera_angle_x"];
+        std::atomic_uint i{0};
+
+        std::for_each(std::execution::par, frames.begin(), frames.end(),
+            [&](auto const& f) {
+                auto& [xform, pixels, resolution, focal_length] = result.dataset[i.fetch_add(1)];
+                for (int m = 0; m < 3; ++m) for (int n = 0; n < 4; ++n) xform[n][m] = static_cast<float>(f["transform_matrix"][m][n]);
+                auto path = (dataset_path / f["file_path"].template get<std::string>()).concat(".png");
+                int w{}, h{}, c{};
+                pixels          = stbi_load(path.string().c_str(), &w, &h, &c, 4);
+                resolution      = {static_cast<uint32_t>(w), static_cast<uint32_t>(h)};
+                focal_length[0] = static_cast<float>(w) / (2.f * std::tan(angle * .5f));
+                focal_length[1] = 0.f;
             }
-        }
+            );
+
         result.success = true;
-        result.message = "Found" + std::to_string(result.dataset.size()) + " images in dataset.";
+        result.message = std::format(
+            "Modern loader OK\n"
+            "JSON: {}\n"
+            "Frames: {}\n"
+            "Threads: {}\n",
+            json_files.size(),
+            result.dataset.size(),
+            std::thread::hardware_concurrency()
+            );
         return result;
     }
 }

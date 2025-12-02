@@ -68,22 +68,13 @@ __FILE__, __LINE__, #expr, cudaGetErrorString(_result)));                       
         const tcnn::vec2& uv,
         const tcnn::ivec2& resolution,
         const void* pixels,
-        const uint32_t img = 0 // optional, default works same as before
+        const uint32_t img = 0
         ) {
-        // ---------------------------------------------
-        // 1. Get pixel address from uv + resolution
-        // ---------------------------------------------
         const uint64_t idx  = pixel_idx(uv, resolution, img);
-        const uint32_t rgba = static_cast<const uint32_t*>(pixels)[idx]; // packed 0xAARRGGBB
+        const uint32_t rgba = static_cast<const uint32_t*>(pixels)[idx];
 
-        // ---------------------------------------------
-        // 2. Masked pixel → skip (-1 = INVALID)
-        // ---------------------------------------------
         if (rgba == 0x00FF00FFu) return {-1.f, -1.f, -1.f, -1.f};
 
-        // ---------------------------------------------
-        // 3. Extract channels [0–255] → float [0–1]
-        // ---------------------------------------------
         const float r = static_cast<float>((rgba >> 0) & 0xFF) * (1.f / 255.f);
         const float g = static_cast<float>((rgba >> 8) & 0xFF) * (1.f / 255.f);
         const float b = static_cast<float>((rgba >> 16) & 0xFF) * (1.f / 255.f);
@@ -93,6 +84,25 @@ __FILE__, __LINE__, #expr, cudaGetErrorString(_result)));                       
                 srgb_to_linear(g) * a,
                 srgb_to_linear(b) * a,
                 a};
+    }
+
+    inline __device__ tcnn::Ray uv_to_ray(
+        const tcnn::vec2& uv,
+        const tcnn::ivec2& resolution,
+        const tcnn::vec2& focal_length,
+        const tcnn::vec2& principal_point,
+        const tcnn::mat4x3& xform
+        ) {
+        const tcnn::vec3 dir_cam = {
+            (uv.x - principal_point.x) * static_cast<float>(resolution.x) / focal_length.x,
+            (uv.y - principal_point.y) * static_cast<float>(resolution.y) / focal_length.y,
+            1.0f
+        };
+
+        const tcnn::vec3 origin_world = xform[3];
+        const tcnn::vec3 dir_world    = tcnn::mat3(xform) * dir_cam;
+
+        return {origin_world, tcnn::normalize(dir_world)};
     }
 
 
@@ -105,19 +115,23 @@ __FILE__, __LINE__, #expr, cudaGetErrorString(_result)));                       
         const uint32_t i = threadIdx.x + blockIdx.x * blockDim.x;
         if (i >= n_rays) return;
         rng.advance(i * N_MAX_RANDOM_SAMPLES_PER_RAY());
+        const uint32_t img  = image_idx(i, n_rays, n_training_images);
+        const tcnn::vec2 uv = nerf_random_image_pos_training(rng, dataset[img].resolution, true);
 
-        const uint32_t img           = image_idx(i, n_rays, n_training_images);
-        const tcnn::ivec2 resolution = dataset[img].resolution;
-        const tcnn::vec2 uv = nerf_random_image_pos_training(rng, resolution, true);
-        const uint64_t pix_idx = pixel_idx(uv, resolution, 0);
-
-        if (read_rgba(uv, resolution, dataset[img].pixels, 0).x < 0.0f) {
+        if (read_rgba(uv, dataset[img].resolution, dataset[img].pixels, 0).x < 0.0f) {
             printf("uv=(%f,%f)\n", uv.x, uv.y);
             return;
         }
 
-        constexpr float max_level = 1.0f;
-        const tcnn::mat4x3 xform  = dataset[img].xform;
+        const tcnn::Ray ray_normalized = uv_to_ray(
+            uv,
+            dataset[img].resolution,
+            dataset[img].focal,
+            tcnn::vec2(0.5f, 0.5f),
+            dataset[img].xform
+            );
+
+        assert(ray_normalized.is_valid());
     }
 }
 
@@ -139,7 +153,7 @@ ngp::TrainResult ngp::train_session(const TrainParams& params) {
         session.pixels_gpu[i].copy_from_host(pixels_cpu);
 
         _pixels     = session.pixels_gpu[i].data();
-        _resolution = tcnn::ivec2(resolution_cpu[0], resolution_cpu[1]);
+        _resolution = tcnn::ivec2(static_cast<int>(resolution_cpu[0]), static_cast<int>(resolution_cpu[1]));
         _focal      = tcnn::vec2(focal_cpu[0], focal_cpu[1]);
         _xform      = tcnn::mat4x3(
             xform_cpu[0][0], xform_cpu[0][1], xform_cpu[0][2],
@@ -155,8 +169,8 @@ ngp::TrainResult ngp::train_session(const TrainParams& params) {
     tcnn::linear_kernel(
         cuda::hidden::generate_training_samples_nerf,
         0,
-        cuda::hidden::NGPSession::instance().m_stream.get(),
-        4096,
+        session.m_stream.get(),
+        session.rays_per_batch,
         n_images,
         session.dataset_gpu.data(),
         rng

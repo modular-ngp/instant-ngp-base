@@ -46,7 +46,7 @@ namespace ngp::hidden {
                 pixels          = stbi_load(path.string().c_str(), &w, &h, &c, 4);
                 resolution      = {static_cast<size_t>(w), static_cast<size_t>(h)};
                 focal[0] = static_cast<float>(w) / (2.f * std::tan(angle * .5f));
-                focal[1] = 0.f;
+                focal[1] = focal[0];
                 channel         = static_cast<size_t>(c);
             }
             );

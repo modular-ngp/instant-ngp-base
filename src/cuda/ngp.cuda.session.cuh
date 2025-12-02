@@ -18,7 +18,7 @@ namespace ngp::cuda::hidden {
         void reset_session(const nlohmann::json& config, const std::string& otype, uint32_t n_pos, uint32_t n_input, uint32_t n_output, uint32_t n_dir_dims, uint32_t n_extra_dims);
 
         struct ImagesDataGPU {
-            const void* pixels;
+            const void* pixels = nullptr;
             tcnn::ivec2 resolution{};
             tcnn::vec2 focal{};
             tcnn::mat4x3 xform{};
@@ -26,8 +26,10 @@ namespace ngp::cuda::hidden {
 
         std::vector<tcnn::GPUMemory<uint8_t>> pixels_gpu;
         tcnn::GPUMemory<ImagesDataGPU> dataset_gpu;
+
         tcnn::StreamAndEvent m_stream;
         tcnn::default_rng_t m_rng;
+        uint32_t rays_per_batch = 1 << 12;
 
         NGPSession(const NGPSession&)            = delete;
         NGPSession& operator=(const NGPSession&) = delete;

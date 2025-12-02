@@ -31,7 +31,7 @@ namespace ngp {
         bool success;
         std::string message;
 
-        [[maybe_unused]] const ResetSessionResult& print() const;
+        [[nodiscard]] [[maybe_unused]] const ResetSessionResult& print() const;
     };
 
     ResetSessionResult reset_session(const ResetSessionParams& params);
@@ -48,7 +48,7 @@ namespace ngp {
         bool success;
         std::string message;
 
-        [[maybe_unused]] const TrainResult& print() const;
+        [[nodiscard]] [[maybe_unused]] const TrainResult& print() const;
     };
 
     TrainResult train_session(const TrainParams& params);
